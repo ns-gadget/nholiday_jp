@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart' show IterableExtension;
+
 final constants = {
   // 祝日を取得する年の最小
   'from': 1949,
@@ -86,9 +88,9 @@ final created = <int, List<Holiday>>{};
 class NHolidayJp {
   /// 年[year]月[month]日[date]の日付が祝日ならその名称を取得
   /// 祝日でないならnull
-  static String getName(int year, int month, int date) {
+  static String? getName(int year, int month, int date) {
     final holidays = NHolidayJp.getByYear(year);
-    final holiday = holidays.firstWhere((v) => v.month == month && v.date == date, orElse: ()=>null);
+    final holiday = holidays.firstWhereOrNull((v) => v.month == month && v.date == date);
     if (holiday != null) {
       return holiday.name;
     }
@@ -109,7 +111,7 @@ class NHolidayJp {
     if (!created.containsKey(year)) {
       created[year]=  NHolidayJp.create(year);
     }
-    return created[year].map((v) => v.clone()).toList();
+    return created[year]!.map((v) => v.clone()).toList();
   }
 
   static List<Holiday> create(int year) {
@@ -130,8 +132,8 @@ class NHolidayJp {
     });
 
     // 国民の祝日(春分の日、秋分の日)
-    holidays.add(Holiday(month: 3, date: NHolidayJp.getEquinox(year, 'shunbun'), name: constants['shunbunName']));
-    holidays.add(Holiday(month: 9, date: NHolidayJp.getEquinox(year, 'shuubun'), name: constants['shuubunName']));
+    holidays.add(Holiday(month: 3, date: NHolidayJp.getEquinox(year, 'shunbun'), name: constants['shunbunName'] as String?));
+    holidays.add(Holiday(month: 9, date: NHolidayJp.getEquinox(year, 'shuubun'), name: constants['shuubunName'] as String?));
 
     // 振替休日
     final furikaeList = holidays.fold(<Holiday>[], (List<Holiday> a, v) {
@@ -157,14 +159,14 @@ class NHolidayJp {
 
     // 日付順にソート
     holidays.sort((a, b) {
-      if (a.month < b.month) {
+      if (a.month! < b.month!) {
         return -1;
-      } else if (a.month > b.month) {
+      } else if (a.month! > b.month!) {
         return 1;
       } else {
-        if (a.date < b.date) {
+        if (a.date! < b.date!) {
           return -1;
-        } else if (a.date > b.date) {
+        } else if (a.date! > b.date!) {
           return 1;
         } else {
           return 0;
@@ -181,14 +183,14 @@ class NHolidayJp {
   /// [holidays] 国民の祝日のリスト
   /// [holiday] 国民の祝日
   /// [year] 年
-  static Holiday getFurikae(List<Holiday> holidays, Holiday holiday, int year) {
-    var date = DateTime(year, holiday.month, holiday.date);
+  static Holiday? getFurikae(List<Holiday> holidays, Holiday holiday, int year) {
+    var date = DateTime(year, holiday.month!, holiday.date!);
     if (date.weekday != DateTime.sunday || date.isBefore((constants['furikaeKyuujitsu']as Map)['from'])) {
       return null;
     }
-    while (holidays.firstWhere((v) =>
+    while (holidays.firstWhereOrNull((v) =>
       (v.month == date.month && v.date == date.day)
-    , orElse: ()=>null) != null || date.weekday == DateTime.sunday) {
+    ) != null || date.weekday == DateTime.sunday) {
       date = date.add(Duration(days: 1));
     }
     return Holiday(month: date.month, date: date.day, name: (constants['furikaeKyuujitsu'] as Map)['name']);
@@ -202,20 +204,20 @@ class NHolidayJp {
   /// [holiday] 国民の祝日
   /// [year] 年
   /// [furikaeList] 振替休日のリスト
-  static Holiday getKokuminNoKyuujitsu(List<Holiday> holidays, Holiday holiday, int year, List<Holiday> furikaeList) {
-    final date = DateTime(year, holiday.month, holiday.date);
+  static Holiday? getKokuminNoKyuujitsu(List<Holiday> holidays, Holiday holiday, int year, List<Holiday> furikaeList) {
+    final date = DateTime(year, holiday.month!, holiday.date!);
     if (date.isBefore((constants['kokuminNoKyuujitsu'] as Map)['from'])) {
       return null;
     }
     final nextDate = date.add(Duration(days: 1));
     final next2Date = nextDate.add(Duration(days: 1));
-    if (holidays.firstWhere((v) =>
+    if (holidays.firstWhereOrNull((v) =>
       (v.month == nextDate.month && v.date == nextDate.day)
-    , orElse: ()=>null) ==null && furikaeList.firstWhere((v) =>
+    ) ==null && furikaeList.firstWhereOrNull((v) =>
       (v.month == nextDate.month && v.date == nextDate.day)
-    , orElse: ()=>null) ==null && nextDate.weekday != DateTime.sunday && holidays.firstWhere((v) =>
+    ) ==null && nextDate.weekday != DateTime.sunday && holidays.firstWhereOrNull((v) =>
       (v.month == next2Date.month && v.date == next2Date.day)
-    ,orElse: ()=>null)!=null) {
+    )!=null) {
       return Holiday(month: nextDate.month, date: nextDate.day, name: (constants['kokuminNoKyuujitsu'] as Map)['name']);
     }
     return null;
@@ -234,7 +236,7 @@ class NHolidayJp {
   /// 
   /// [year] 年
   /// [type] shunbun(春分)またはshuubun(秋分)
-  static int getEquinox(int year, String type) {
+  static int? getEquinox(int year, String type) {
     return ((constants[type] as List).firstWhere((v) =>
       v['from'] <= year && (v['to'] == null || year <= v['to'])
     )as Map)['mod4'][year % 4];
@@ -247,9 +249,9 @@ class Holiday {
   /// [name] 名称
   Holiday({this.month, this.date, this.name}) ;
 
-  int month;
-  int date;
-  String name;
+  int? month;
+  int? date;
+  String? name;
 
   Holiday clone() {
     return Holiday(month: month, date: date, name: name);
